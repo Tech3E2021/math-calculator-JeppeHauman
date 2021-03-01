@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml.Serialization;
 
 namespace MathCalculator
@@ -26,6 +27,17 @@ namespace MathCalculator
                 server.Start();
                 Console.WriteLine("This bitch started yo");
 
+                while (true)
+                {
+                    TcpClient connectionSocket = server.AcceptTcpClient();
+                    Task.Run(() =>
+                    {
+                        TcpClient tempSocket = connectionSocket;
+                        DoClient(tempSocket);
+                    });
+                }
+
+                server.Stop();
                 
             }
             catch(SocketException e)
@@ -34,14 +46,10 @@ namespace MathCalculator
             }
         }
 
-        private void DoClient(TcpListener server)
+        private void DoClient(TcpClient server)
         {
-            
-
-            TcpClient connectionSocket = server.AcceptTcpClient();
-
             Console.WriteLine("We activated");
-            Stream ns = connectionSocket.GetStream();
+            Stream ns = server.GetStream();
 
             StreamReader sr = new StreamReader(ns);
             StreamWriter sw = new StreamWriter(ns);
@@ -49,10 +57,13 @@ namespace MathCalculator
             sw.WriteLine("Type: Add (YourNumberX) (YourNumberY), to add two numbers");
             string[] arry = sr.ReadLine().Split(' ');
             _clientNumberX = double.Parse(arry[1]);
-            _clientNumberY = Double.Parse(arry[2]);
-            _addedNumbers = _clientNumberX = _clientNumberY;
+            _clientNumberY = double.Parse(arry[2]);
+            _addedNumbers = _clientNumberX + _clientNumberY;
 
             sw.WriteLine($"Your numbers added = {_addedNumbers}");
+
+            ns.Close();
+            server.Close();
 
         }
 
